@@ -41,35 +41,36 @@ public class BookInventoryController {
 
     //3
     @GetMapping("/{id}")
-    public ResponseEntity<Book> getBookById(@PathVariable Long id) {
-        Book book = bookInventoryService.findBookById(id).orElseThrow(()->new ResourceNotFoundException());
+    public ResponseEntity<Book> getBookById(@PathVariable ("id") Long id) {
+        Book book = bookInventoryService.findBookById(id).orElseThrow(ResourceNotFoundException::new);
         return new  ResponseEntity<> (book, HttpStatus.OK);
     }
 
     //4
     @PutMapping("/{id}")
-    public ResponseEntity<Book> updateBook(@PathVariable Long id, @Valid @RequestBody Book bookDetails) {
-        Optional<Book> book = bookInventoryService.findBookById(id);
-        if (book.isPresent()) {
-            Book updatedBook = book.get();
-            updatedBook.setTitle(bookDetails.getTitle());
-            updatedBook.setAuthor(bookDetails.getAuthor());
-            return ResponseEntity.ok(bookInventoryService.saveBook(updatedBook));
-        } else {
-            throw new ResourceNotFoundException();
-        }
+    public ResponseEntity<Object> updateBookById(@PathVariable("id") Long bookId, @RequestBody @Valid Book book){
+        Book updateBook = bookInventoryService.findBookById(bookId).map(b -> {
+            b.setAuthor(book.getAuthor());
+            b.setTitle(book.getTitle());
+            return bookInventoryService.saveBook(b);
+        }).orElseThrow(() -> new ResourceNotFoundException());
+        return new ResponseEntity<>(updateBook, HttpStatus.OK);
+
     }
 
     //5
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
-        Optional<Book> book = bookInventoryService.findBookById(id);
-        if (book.isPresent()) {
-            bookInventoryService.deleteBookById(id);
-            return ResponseEntity.noContent().build();
-        } else {
-            throw new ResourceNotFoundException();
-        }
+    public ResponseEntity<Object> deleteBookById (@PathVariable("id")Long bookId){
+
+        Book deleteBook = bookInventoryService.findBookById(bookId).map(b->{
+            bookInventoryService.deleteBookById(b.getId());
+
+            return b;
+        }).orElseThrow(ResourceNotFoundException::new);
+
+        String response = String.format("%s deleted successfully", deleteBook.getTitle());
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 
